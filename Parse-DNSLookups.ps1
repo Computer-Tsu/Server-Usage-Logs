@@ -1,61 +1,60 @@
 <#
 .SYNOPSIS
-    Extracts requested domain names (FQDNs) from Windows DNS debug logs.
+    Extracts requested FQDNs from Windows DNS debug logs.
 
 .DESCRIPTION
-    - Parses DNS debug logs typically located at C:\Windows\System32\dns\dns.log
-    - Extracts FQDNs from DNS query lines (Query for, QRY, etc.)
-    - Deduplicates and sorts them
-    - Optionally disables progress bar for performance
+    - Parses lines matching DNS queries from dns.log
+    - Extracts FQDNs (fully qualified domain names)
+    - Supports optional CSV output: domain,count sorted by count descending
+    - Optionally disables the progress bar for better performance
 
 .PARAMETER LogFile
-    Full path to the DNS debug log file
+    Path to the DNS debug log file (default: C:\Windows\System32\dns\dns.log)
+
+.PARAMETER Csv
+    Outputs results as ParsedNames-DNS.csv with unique domain,count sorted by count descending
 
 .PARAMETER NoProgress
-    If specified, disables the progress indicator for faster parsing
-
-.OUTPUT
-    Writes results to ParsedNames-DNS.txt in current working directory
+    Disables progress bar for faster parsing
 
 .NOTES
     To enable DNS debug logging:
-    - Open DNS Manager
-    - Right-click your server > Properties > Debug Logging tab
-    - Enable logging and select query types (e.g., incoming/outgoing, packets, queries)
-    - Default file: %SystemRoot%\System32\dns\dns.log
+    - Open DNS Manager > server properties > Debug Logging tab
+    - Enable “Log packets for queries and responses”
+    - Default path: C:\Windows\System32\dns\dns.log
 
 .EXAMPLE
     .\Parse-DNSRequests.ps1
-    .\Parse-DNSRequests.ps1 -LogFile "D:\logs\dns.log" -NoProgress
+    .\Parse-DNSRequests.ps1 -Csv
+    .\Parse-DNSRequests.ps1 -LogFile "D:\Logs\dns.log" -Csv -NoProgress
 #>
 
 param (
     [string]$LogFile = "C:\Windows\System32\dns\dns.log",
+    [switch]$Csv,
     [switch]$NoProgress
 )
 
 Write-Host "Parsing DNS log file: $LogFile"
+
 if (-Not (Test-Path $LogFile)) {
-    Write-Warning "Log file not found: $LogFile"
+    Write-Warning "DNS log file not found: $LogFile"
     Write-Host "`nTo enable DNS logging:"
     Write-Host "1. Open DNS Manager"
-    Write-Host "2. Right-click your server > Properties > Debug Logging tab"
-    Write-Host "3. Enable logging of packet and query types"
-    Write-Host "4. Default log file: C:\Windows\System32\dns\dns.log"
+    Write-Host "2. Right-click server > Properties > Debug Logging tab"
+    Write-Host "3. Enable 'Log packets for queries and responses'"
+    Write-Host "4. Default file: C:\Windows\System32\dns\dns.log"
     exit 1
 }
 
-$outputFile = Join-Path -Path (Get-Location) -ChildPath "ParsedNames-DNS.txt"
 $nameRegex = '\b([a-zA-Z0-9][-a-zA-Z0-9]*\.)+[a-zA-Z]{2,}\b'
-$queries = @()
-
 $lines = Get-Content $LogFile
 $total = $lines.Count
 $counter = 0
+$nameHash = @{}
 
 foreach ($line in $lines) {
     $counter++
-
     if (-not $NoProgress -and ($counter % 500 -eq 0)) {
         Write-Progress -Activity "Scanning DNS log" -Status "$counter of $total" -PercentComplete (($counter / $total) * 100)
     }
@@ -63,10 +62,25 @@ foreach ($line in $lines) {
     if ($line -match "Query for|received name query|QRY") {
         $matches = [regex]::Matches($line, $nameRegex)
         foreach ($match in $matches) {
-            $queries += $match.Value.ToLower()
+            $name = $match.Value.ToLower()
+            if ($nameHash.ContainsKey($name)) {
+                $nameHash[$name]++
+            } else {
+                $nameHash[$name] = 1
+            }
         }
     }
 }
 
-$queries | Sort-Object | Get-Unique | Tee-Object -FilePath $outputFile
-Write-Host "Saved unique hostnames to: $outputFile"
+if ($Csv) {
+    $csvFile = Join-Path -Path (Get-Location) -ChildPath "ParsedNames-DNS.csv"
+    $nameHash.GetEnumerator() |
+        Sort-Object -Property Value -Descending |
+        Select-Object @{Name="Domain";Expression={$_.Key}}, @{Name="Count";Expression={$_.Value}} |
+        Export-Csv -Path $csvFile -NoTypeInformation -Encoding UTF8
+    Write-Host "Saved CSV output to: $csvFile"
+} else {
+    $txtFile = Join-Path -Path (Get-Location) -ChildPath "ParsedNames-DNS.txt"
+    $nameHash.Keys | Sort-Object | Get-Unique | Tee-Object -FilePath $txtFile
+    Write-Host "Saved unique domain names to: $txtFile"
+}

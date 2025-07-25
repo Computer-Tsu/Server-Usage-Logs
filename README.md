@@ -1,7 +1,9 @@
 # Analyzing Server Usage Logs
 
 Microsoft Windows Server roles and services write activity usage to text logs. These scripts will scan and parse those logging files and output the client IP addresses.<br>The purpose is to identify devices and clients on your network that are still using your DNS, WINS, and other servers. Often when decommisioning a server, there will be devices that are hard coded, not well documented.<br>
-
+Reference a similar GitHub project code: (https://github.com/r-milne/Check-Exchange-SMTP-Logs-To-Get-Unique-Sender-IP-Addresses). Source code can also be found in an online magazine article, I believe.<br>
+I have used a PowerShell script for this process before and the running duration was long (an hour, a couple hours). I have also used the text processing tools Sed and Awk. Awk was far faster (a minute or two). Add awk to your Windows PC using WSL, Cygwin, etc.<br>
+The PS script's array building loop and the removing of duplicates should be looked at for performance optimization.
 
 ---
 

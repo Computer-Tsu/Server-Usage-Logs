@@ -7,24 +7,24 @@ Microsoft Windows Server roles and services write activity usage to text logs. T
 
 ### 🧾 **Windows Server Services with Text-Based Logs**
 
-#### 🔐 **Authentication & Network Access**
+#### 🧮 **Name Services**
 
-* **RRAS (Routing and Remote Access Service)** – logs VPN and dial-up connections (`%SystemRoot%\System32\LogFiles\` or `C:\Windows\System32\LogFiles\RRAS\`)
-* **NPS (Network Policy Server)** – RADIUS logs in IAS format (`%SystemRoot%\System32\LogFiles`)
+* **DNS Server** – debug logs (must be enabled), stored in a file like `dns.log`
+* **WINS (Windows Internet Name Service)** – log file: `wins.log` (`%SystemRoot%\System32\Wins\`)
 
 #### 📧 **Messaging & Email**
 
 * **Microsoft Exchange Transport (SMTP)** – `SMTPReceive`, `SMTPSubmit`, etc. (`C:\Program Files\Microsoft\Exchange Server\V15\TransportRoles\Logs\FrontEnd\ProtocolLog\SmtpReceive\`)
-* **Exchange IMAP/POP** – protocol logs stored similarly to SMTP logs
+* **Exchange IMAP/POP** – protocol logs stored similarly to SMTP logs (`C:\Program Files\Microsoft\Exchange Server\V15\Logging\IMAP4\` and `..\POP3\`)
 
 #### 🌐 **Web Services**
 
 * **IIS (Internet Information Services)** – W3C logs typically at `C:\inetpub\logs\LogFiles\W3SVC1\`
 
-#### 🧮 **Name Services**
+#### 🔐 **Authentication & Network Access**
 
-* **DNS Server** – debug logs (must be enabled), stored in a file like `dns.log`
-* **WINS (Windows Internet Name Service)** – log file: `wins.log` (`%SystemRoot%\System32\Wins\`)
+* **RRAS (Routing and Remote Access Service)** – logs VPN and dial-up connections (`%SystemRoot%\System32\LogFiles\` or `C:\Windows\System32\LogFiles\RRAS\`)
+* **NPS (Network Policy Server)** – RADIUS logs in IAS format (`%SystemRoot%\System32\LogFiles`)
 
 #### 📄 **Printing**
 
